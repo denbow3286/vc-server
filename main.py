@@ -12,7 +12,7 @@ GEMINI_API_KEY = "AIzaSyAPEBeTmDJcYC4_dTdNJ6IhO_4okARZJgM"
 
 # Geminiの設定
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-pro')
 
 app = FastAPI()
 
