@@ -6,19 +6,34 @@ import google.generativeai as genai
 import json
 
 # ==========================================
-# あなたのGemini APIキー
+# あなたのAPIキー
 GEMINI_API_KEY = "AIzaSyAPEBeTmDJcYC4_dTdNJ6IhO_4okARZJgM" 
 # ==========================================
 
 # Geminiの設定
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-pro')
+
+# ここが重要：最新かつ軽量なモデルを指定
+# もしこれで駄目ならログに一覧が出ます
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event():
+    # サーバー起動時に、使えるモデル一覧をログに出力して確認する
+    print("=== 使えるモデル一覧チェック ===")
+    try:
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                print(m.name)
+    except Exception as e:
+        print(f"モデル一覧取得エラー: {e}")
+    print("============================")
+
 @app.get("/")
 def read_root():
-    return {"status": "Gemini Server is running"}
+    return {"status": "Gemini Server is running (v1.5)"}
 
 @app.post("/process_image")
 async def process_image(file: UploadFile = File(...)):
@@ -28,7 +43,7 @@ async def process_image(file: UploadFile = File(...)):
     width, height = image.size
     print(f"画像受信: {width}x{height}")
 
-    # 2. Geminiへの命令（プロンプト）
+    # 2. Geminiへの命令
     prompt = """
     あなたはスマホ自動操作ロボットです。画像を見て、次にタップすべき場所の座標を教えてください。
     
@@ -48,7 +63,7 @@ async def process_image(file: UploadFile = File(...)):
         response = model.generate_content([prompt, image])
         text = response.text
         
-        # 4. JSONを綺麗に取り出す
+        # 4. JSONを取り出す
         clean_text = text.replace("```json", "").replace("```", "").strip()
         data = json.loads(clean_text)
         
